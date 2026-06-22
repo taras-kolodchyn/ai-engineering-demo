@@ -48,7 +48,7 @@ make ps
 make urls
 ```
 
-`make up` starts the full Compose stack, removes orphan containers, and waits until healthchecks are ready. `make down` stops the full stack without deleting volumes.
+`make up` starts the full Compose stack, removes orphan containers, waits until healthchecks are ready, and prints the local resource map. `make urls` reprints the same resource map later. `make down` stops the full stack without deleting volumes.
 
 Open:
 

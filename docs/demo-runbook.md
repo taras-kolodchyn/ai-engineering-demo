@@ -26,7 +26,7 @@ make doctor
 make up
 ```
 
-Show service URLs and committed demo credentials:
+`make up` prints service URLs, local ports, committed demo credentials, model names, and common demo commands. Reprint the same resource map later:
 
 ```bash
 make urls

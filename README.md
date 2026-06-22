@@ -47,11 +47,16 @@ make init
 make pull
 make doctor
 make up
-make urls
 make smoke
 ```
 
-After startup:
+`make up` prints the local resource map after the containers are healthy. Reprint it later with:
+
+```bash
+make urls
+```
+
+Main endpoints:
 
 | Service | URL |
 | --- | --- |
@@ -201,10 +206,10 @@ make init      # create .env from .env.example if .env does not exist
 make pull      # pull Docker images
 make check     # run static repository checks
 make doctor    # run local machine preflight checks before the lecture
-make up        # start the full stack and wait for healthy/completed states
+make up        # start the full stack, wait for health, and print resources
 make down      # stop the full stack without removing volumes
 make restart   # run down + up
-make urls      # print URLs and demo credentials
+make urls      # print the local resource map and demo credentials
 make smoke     # run the full runtime smoke test
 make demo      # run a short live demo request
 make load      # generate LiteLLM traffic and demo logs

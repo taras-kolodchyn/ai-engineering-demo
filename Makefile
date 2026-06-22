@@ -10,7 +10,7 @@ help:
 		'Targets:' \
 		'  make init     Copy .env.example to .env when .env does not exist' \
 		'  make pull     Pull all compose images' \
-		'  make up       Start the full stack and wait for healthy services' \
+		'  make up       Start the full stack, wait for health, and print resources' \
 		'  make down     Stop the full stack without deleting volumes' \
 		'  make restart  Restart the stack' \
 		'  make logs     Follow logs for all services' \
@@ -18,7 +18,7 @@ help:
 		'  make config   Validate and render docker compose configuration' \
 		'  make check    Run static repository checks' \
 		'  make doctor   Run local preflight checks for the demo machine' \
-		'  make urls     Print local service URLs and demo credentials' \
+		'  make urls     Print the local resource map and demo credentials' \
 		'  make smoke    Run local endpoint smoke checks' \
 		'  make demo     Start the stack and run a lecture demo request' \
 		'  make load     Generate demo LiteLLM traffic and logs' \
@@ -36,6 +36,7 @@ pull:
 
 up: init
 	docker compose up --detach --remove-orphans --wait --wait-timeout $(COMPOSE_WAIT_TIMEOUT)
+	./scripts/print-urls.sh
 
 down:
 	docker compose down --remove-orphans --timeout $(COMPOSE_DOWN_TIMEOUT)
