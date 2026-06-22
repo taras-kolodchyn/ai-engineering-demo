@@ -1,0 +1,300 @@
+name: ai-engineering-demo
+
+x-common-labels: &common-labels
+  com.ai-demo.stack: "ai-engineering-demo"
+
+networks:
+  ai_stack:
+    name: ai-engineering-demo
+
+volumes:
+  postgres_data:
+  redis_data:
+  ollama_data:
+  grafana_data:
+  victoriametrics_data:
+  victorialogs_data:
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-pgvector/pgvector:pg16}
+    container_name: ai-demo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-litellm}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "database"
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7.4-alpine}
+    container_name: ai-demo-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-admin}"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD:-admin}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-admin}
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "cache"
+
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
+    container_name: ai-demo-ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-24h}
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "model-runtime"
+
+  ollama-init:
+    image: ${CURL_IMAGE:-curlimages/curl:8.11.1}
+    container_name: ai-demo-ollama-init
+    restart: "no"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:0.5b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        echo "Pulling Ollama model: ${OLLAMA_MODEL:-qwen2.5:0.5b}"
+        curl -fsS http://ollama:11434/api/pull \
+          -H "Content-Type: application/json" \
+          -d "{\"model\":\"${OLLAMA_MODEL:-qwen2.5:0.5b}\",\"stream\":false}"
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "model-bootstrap"
+
+  litellm:
+    image: ${LITELLM_IMAGE:-ghcr.io/berriai/litellm-database:main-latest}
+    container_name: ai-demo-litellm
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin}@postgres:5432/${POSTGRES_DB:-litellm}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-ai-demo-local-change-me}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:-sk-litellm-local-salt-change-me}
+      LITELLM_MODE: PRODUCTION
+      LITELLM_OLLAMA_MODEL: ${LITELLM_OLLAMA_MODEL:-ollama_chat/qwen2.5:0.5b}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-admin}
+      STORE_MODEL_IN_DB: "True"
+      UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:-admin}
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+    volumes:
+      - ./infra/litellm/config.yaml:/app/config.yaml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=5).read()\""]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "llm-gateway"
+
+  codex-rag-demo:
+    image: ${CODEX_RAG_DEMO_IMAGE:-ai-engineering-demo/codex-rag-demo:local}
+    build:
+      context: ./apps/codex-rag-demo
+    container_name: ai-demo-codex-rag-demo
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+    environment:
+      APP_PORT: 8080
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin}@postgres:5432/${POSTGRES_DB:-litellm}
+      LITELLM_BASE_URL: http://litellm:4000
+      LITELLM_API_KEY: ${LITELLM_MASTER_KEY:-sk-ai-demo-local-change-me}
+      LITELLM_MODEL: local-chat
+      RAG_TOP_K: ${CODEX_RAG_DEMO_TOP_K:-3}
+      RAG_VECTOR_DIMS: ${CODEX_RAG_DEMO_VECTOR_DIMS:-32}
+      RUST_LOG: ${CODEX_RAG_DEMO_RUST_LOG:-info}
+    ports:
+      - "${CODEX_RAG_DEMO_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health >/dev/null"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 15s
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "codex-rag-demo"
+
+  postgres-exporter:
+    image: ${POSTGRES_EXPORTER_IMAGE:-quay.io/prometheuscommunity/postgres-exporter:latest}
+    container_name: ai-demo-postgres-exporter
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin}@postgres:5432/${POSTGRES_DB:-litellm}?sslmode=disable
+    ports:
+      - "${POSTGRES_EXPORTER_PORT:-9187}:9187"
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "metrics-exporter"
+
+  redis-exporter:
+    image: ${REDIS_EXPORTER_IMAGE:-oliver006/redis_exporter:latest}
+    container_name: ai-demo-redis-exporter
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    command:
+      - "--redis.addr=redis://redis:6379"
+      - "--redis.password=${REDIS_PASSWORD:-admin}"
+    ports:
+      - "${REDIS_EXPORTER_PORT:-9121}:9121"
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "metrics-exporter"
+
+  victoriametrics:
+    image: ${VICTORIAMETRICS_IMAGE:-victoriametrics/victoria-metrics:v1.145.0}
+    container_name: ai-demo-victoriametrics
+    restart: unless-stopped
+    command:
+      - "-storageDataPath=/victoria-metrics-data"
+      - "-retentionPeriod=${VICTORIAMETRICS_RETENTION:-7d}"
+      - "-promscrape.config=/etc/victoriametrics/promscrape.yml"
+    ports:
+      - "${VICTORIAMETRICS_PORT:-8428}:8428"
+    volumes:
+      - victoriametrics_data:/victoria-metrics-data
+      - ./infra/victoriametrics/promscrape.yml:/etc/victoriametrics/promscrape.yml:ro
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "metrics-store"
+
+  victorialogs:
+    image: ${VICTORIALOGS_IMAGE:-victoriametrics/victoria-logs:latest}
+    container_name: ai-demo-victorialogs
+    restart: unless-stopped
+    command:
+      - "-storageDataPath=/victoria-logs-data"
+      - "-retentionPeriod=${VICTORIALOGS_RETENTION:-7d}"
+    ports:
+      - "${VICTORIALOGS_PORT:-9428}:9428"
+    volumes:
+      - victorialogs_data:/victoria-logs-data
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "logs-store"
+
+  vector:
+    image: ${VECTOR_IMAGE:-timberio/vector:latest-debian}
+    container_name: ai-demo-vector
+    restart: unless-stopped
+    user: root
+    depends_on:
+      - victorialogs
+    command: ["--config", "/etc/vector/vector.yaml"]
+    ports:
+      - "${VECTOR_API_PORT:-8686}:8686"
+      - "${VECTOR_METRICS_PORT:-9598}:9598"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/vector/vector.yaml:/etc/vector/vector.yaml:ro
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "logs-agent"
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:12.3.0}
+    container_name: ai-demo-grafana
+    restart: unless-stopped
+    depends_on:
+      - victoriametrics
+      - victorialogs
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_DEFAULT_THEME: light
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_METRICS_ENABLED: "true"
+      GF_PLUGINS_PREINSTALL: victoriametrics-logs-datasource
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - ai_stack
+    labels:
+      <<: *common-labels
+      com.ai-demo.component: "dashboard"
