@@ -4,6 +4,8 @@ These tasks are small, lecture-friendly prompts for demonstrating Codex on this 
 
 Use one task at a time. Each task should end with verification commands and a short explanation of what changed.
 
+For copy-paste-ready live prompts, use [Codex Live Demo Prompts](../codex-prompts.md).
+
 ## Tasks
 
 - [Task 01: Explain the Stack](01-explain-stack.md)

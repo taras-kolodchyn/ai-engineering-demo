@@ -180,7 +180,7 @@ This uses the Rust service in `apps/codex-rag-demo/`:
 - `POST /ask` retrieves context from pgvector and calls LiteLLM `local-chat`.
 - `GET /metrics` exposes service metrics scraped by VictoriaMetrics.
 
-Use [Codex Lecture Demo Runbook](docs/codex-demo-runbook.md) and [Codex Teaching Tasks](docs/codex-tasks/README.md) for live lecture prompts.
+Use [Codex Lecture Demo Runbook](docs/codex-demo-runbook.md), [Codex Live Demo Prompts](docs/codex-prompts.md), and [Codex Teaching Tasks](docs/codex-tasks/README.md) for live lecture prompts.
 
 ## Services
 
@@ -274,6 +274,7 @@ make smoke
 ├── docs/
 │   ├── demo-runbook.md               # lecture scenario
 │   ├── codex-demo-runbook.md         # Codex-focused lecture flow
+│   ├── codex-prompts.md              # ready-to-use Codex prompts
 │   ├── codex-tasks/                  # small teaching tasks for Codex
 │   ├── docker-compose-stack.md       # technical stack overview
 │   ├── failure-drill.md              # outage/recovery exercise
@@ -304,6 +305,7 @@ make smoke
 - [Agent instruction infrastructure](docs/agents/README.md)
 - [Docker Compose Stack](docs/docker-compose-stack.md)
 - [Codex Lecture Demo Runbook](docs/codex-demo-runbook.md)
+- [Codex Live Demo Prompts](docs/codex-prompts.md)
 - [Codex Teaching Tasks](docs/codex-tasks/README.md)
 - [Lecture Demo Runbook](docs/demo-runbook.md)
 - [Failure Drill](docs/failure-drill.md)
