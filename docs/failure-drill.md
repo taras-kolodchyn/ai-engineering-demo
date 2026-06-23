@@ -2,6 +2,8 @@
 
 This drill gives a controlled observability story for the lecture: stop one service, watch VictoriaMetrics detect it, recover it, and run smoke checks.
 
+For broader Codex debugging exercises, see [Codex Failure Scenarios](codex-failure-scenarios.md).
+
 ## LiteLLM Outage Drill
 
 Run:

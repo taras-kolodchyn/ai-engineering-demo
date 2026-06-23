@@ -53,7 +53,7 @@ curl -s http://localhost:8080/ask \
   -d '{"question":"How can Codex use this repository during a lecture?"}' | python3 -m json.tool
 ```
 
-Then use Codex to perform one small engineering change from `docs/codex-tasks/`, or run one of the ready prompts from [Codex Live Demo Prompts](codex-prompts.md).
+Then use Codex to perform one small engineering change from `docs/codex-tasks/`, run one of the ready prompts from [Codex Live Demo Prompts](codex-prompts.md), or run a controlled debugging exercise from [Codex Failure Scenarios](codex-failure-scenarios.md).
 
 ## What to Demonstrate
 
@@ -64,6 +64,7 @@ Then use Codex to perform one small engineering change from `docs/codex-tasks/`,
 - Observability: ask Codex to query VictoriaMetrics and VictoriaLogs for the Rust service.
 - Documentation discipline: ask Codex to update README and runbook text in English.
 - Prompt discipline: use `docs/codex-prompts.md` when you want a short, repeatable live task.
+- Failure discipline: use `docs/codex-failure-scenarios.md` when you want a reversible debugging story.
 
 ## Useful Queries
 

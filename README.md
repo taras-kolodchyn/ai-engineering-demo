@@ -14,7 +14,7 @@ The goal is simple: anyone with Docker on a laptop can start the stack, call a l
 - **Codex target**: a small Rust service gives Codex realistic code, tests, Docker wiring, RAG behavior, logs, and metrics to inspect and change.
 - **Observability**: VictoriaMetrics, VictoriaLogs, Vector, and Grafana provide metrics, logs, and dashboards.
 - **RAG path**: Markdown knowledge base -> `pgvector` -> retrieval -> LiteLLM/Ollama answer.
-- **Live operations**: smoke checks, load generation, failure drill, and troubleshooting docs.
+- **Live operations**: smoke checks, load generation, failure scenarios, and troubleshooting docs.
 
 ## Architecture
 
@@ -182,6 +182,8 @@ This uses the Rust service in `apps/codex-rag-demo/`:
 
 Use [Codex Lecture Demo Runbook](docs/codex-demo-runbook.md), [Codex Live Demo Prompts](docs/codex-prompts.md), and [Codex Teaching Tasks](docs/codex-tasks/README.md) for live lecture prompts.
 
+For controlled debugging exercises, use [Codex Failure Scenarios](docs/codex-failure-scenarios.md).
+
 ## Services
 
 | Service | Port | Purpose |
@@ -274,6 +276,7 @@ make smoke
 ├── docs/
 │   ├── demo-runbook.md               # lecture scenario
 │   ├── codex-demo-runbook.md         # Codex-focused lecture flow
+│   ├── codex-failure-scenarios.md    # controlled debugging exercises
 │   ├── codex-prompts.md              # ready-to-use Codex prompts
 │   ├── codex-tasks/                  # small teaching tasks for Codex
 │   ├── docker-compose-stack.md       # technical stack overview
@@ -305,6 +308,7 @@ make smoke
 - [Agent instruction infrastructure](docs/agents/README.md)
 - [Docker Compose Stack](docs/docker-compose-stack.md)
 - [Codex Lecture Demo Runbook](docs/codex-demo-runbook.md)
+- [Codex Failure Scenarios](docs/codex-failure-scenarios.md)
 - [Codex Live Demo Prompts](docs/codex-prompts.md)
 - [Codex Teaching Tasks](docs/codex-tasks/README.md)
 - [Lecture Demo Runbook](docs/demo-runbook.md)

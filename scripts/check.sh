@@ -132,6 +132,7 @@ require_file apps/codex-rag-demo/README.md
 require_file apps/codex-rag-demo/src/main.rs
 require_file docs/docker-compose-stack.md
 require_file docs/codex-demo-runbook.md
+require_file docs/codex-failure-scenarios.md
 require_file docs/codex-prompts.md
 require_file docs/codex-tasks/README.md
 require_file docs/codex-tasks/01-explain-stack.md
@@ -211,6 +212,7 @@ fi
 printf 'Checking documentation links to core runbooks...\n'
 grep -q 'docs/docker-compose-stack.md' README.md
 grep -q 'docs/codex-demo-runbook.md' README.md
+grep -q 'docs/codex-failure-scenarios.md' README.md
 grep -q 'docs/codex-prompts.md' README.md
 grep -q 'docs/demo-runbook.md' README.md
 grep -q 'docs/failure-drill.md' README.md

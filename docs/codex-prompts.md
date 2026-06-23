@@ -4,6 +4,8 @@ Use these prompts during the lecture to show Codex working on a realistic AI eng
 
 Each prompt is intentionally scoped so the audience can see repository reading, code changes, verification, and documentation discipline in a short live session.
 
+For prompts tied to intentionally broken runtime states, use [Codex Failure Scenarios](codex-failure-scenarios.md).
+
 ## Prompt 1: Explain the Stack
 
 ```text
